@@ -1,0 +1,281 @@
+<html>
+    <head>
+        <script>
+            var DefaultCNFLanguage =
+              "S->AB|AC|AD|@;\r\n" +
+              "A->aA|a;\r\n" +
+              "B->Bb|b;\r\n" +
+              "C->Cc|cC|c|@;\r\n" +
+              "E->AB|@;\r\n"
+
+            function onLoadEvent() {
+                document.getElementById("inputCNF").value = DefaultCNFLanguage
+            }
+
+            function cnfTextToArray(cnf_str) {
+                //console.log("==== cnfTextToArray ====")
+
+                // remove line breaks / newlines (\r OR \n OR \r\n)
+                cnf_str = cnf_str.replace(/(\r\n|\n|\r)/gm,"");
+                // remove last ";" symbol
+                cnf_str = cnf_str.slice(0,-1)
+                //console.log("1. ",cnf_str)
+
+                // split each line/rule in a language to an array
+                var cnf_arr_str = cnf_str.split(";")
+                //console.log("2. ",cnf_arr_str)
+
+                // loop through each lines/rules in the language
+                // then split it into array
+                var cnf_arr = cnf_arr_str.slice(0)
+                for (var i = 0; i < cnf_arr.length; i++) {
+                    cnf_arr[i] = cnf_arr[i].replace(/(->)/gm,"|")
+                    cnf_arr[i] = cnf_arr[i].split("|")
+                }
+                //console.log("3. ",cnf_arr)
+
+                return cnf_arr
+            }
+
+            function cnfArraytoText(cnf_arr) {
+                var cnf_str = ""
+                for (var i = 0; i < cnf_arr.length; i++) {
+                    cnf_str += cnf_arr[i][0] + "->"
+                    for (var j = 1; j < cnf_arr[i].length; j++) {
+                        cnf_str += cnf_arr[i][j] + "|"
+                    }
+                    cnf_str = cnf_str.slice(0,-1)
+                    cnf_str += ";\r\n"
+                }
+                return cnf_str
+            }
+
+            function eliminateNotGenerating(cnf_arr) {
+                console.log("==== Eliminate Not Generating ====")
+                var cnf_arr_temp = cnfTextToArray(cnfArraytoText(cnf_arr))
+
+                // loop trough all lines/rules
+                var generatingRules = new Array
+                var generatingRulesPrev = ""
+                while (JSON.stringify(generatingRules) != JSON.stringify(generatingRulesPrev)) {
+                    console.log("Generating Rules/Lines: ",JSON.stringify(generatingRules))
+                    // copy the array before replace it with updated array
+                    generatingRulesPrev = generatingRules.slice(0)
+                    generatingRules = new Array
+
+                    // update generatingRules
+                    for (var i = 0; i < cnf_arr.length; i++) {
+                        var isTerminalFound = false
+
+                        for (var j = 1; j < cnf_arr[i].length; j++) {
+                            // if it's lowercase and not epsilon symbol (a terminal found)
+                            if (cnf_arr[i][j] == (cnf_arr[i][j].match(/[a-z]/gm) || []).join("")) {
+                                isTerminalFound = true
+                            }
+                        }
+
+                        if (isTerminalFound) {
+                            generatingRules.push(cnf_arr[i][0])
+                        }
+                    }
+
+                    // update uppercases to lowercases if it's on generatingRules array
+                    for (var i = 0; i < cnf_arr.length; i++) {
+                        for (var j = 1; j < cnf_arr[i].length; j++) {
+                            var generatingRules_str = generatingRules.join("")
+                            var str = ""
+                            for (var k = 0; k < cnf_arr[i][j].length; k++) {
+                                if (generatingRules_str.includes(cnf_arr[i][j][k])) {
+                                    str += cnf_arr[i][j][k].toLowerCase()
+                                } else {
+                                    str += cnf_arr[i][j][k]
+                                }
+                            }
+                            cnf_arr[i][j] = str
+                        }
+                    }
+                }
+
+                // remove not generating
+                var cnf_arr_res = new Array
+                for (var i = 0; i < cnf_arr_temp.length; i++) {
+                    cnf_arr_res[i] = new Array
+                    cnf_arr_res[i].push(cnf_arr_temp[i][0])
+                    for (var j = 1; j < cnf_arr_temp[i].length; j++) {
+                        var isNotFound = false
+                        var generatingRules_str = generatingRules.join("")
+                        for (var k = 0; k < cnf_arr_temp[i][j].length; k++) {
+                            if (!generatingRules_str.includes(cnf_arr_temp[i][j][k].toUpperCase())) {
+                                isNotFound = true
+                            }
+                        }
+                        if (!isNotFound || (cnf_arr_temp[i][j] == "@")) {
+                            cnf_arr_res[i].push(cnf_arr_temp[i][j])
+                        }
+                    }
+                }
+
+                return cnf_arr_res
+            }
+
+            function eliminateNotReachable(cnf_arr) {
+                console.log("==== Eliminate Not Reachable ====")
+                var cnf_arr_res = new Array
+
+                // loop trough all lines/rules
+                var reachableList = new Array
+                var reachableListNext = new Array
+                reachableList.push("S")
+                reachableListNext.push("S")
+                while (reachableListNext.length > 0) {
+                    var letter = reachableListNext.pop()
+
+                    // do for current "uppercase letter"
+                    for (var i = 0; i < cnf_arr.length; i++) {
+                        if (cnf_arr[i][0] == letter) {
+                            for (var j = 1; j < cnf_arr[i].length; j++) {
+                                for (var k = 0; k < cnf_arr[i][j].length; k++) {
+                                    var reachableList_str = reachableList.join("")
+                                    if (!reachableList_str.includes(cnf_arr[i][j][k]) && (cnf_arr[i][j][k] != "@") && (cnf_arr[i][j][k] == cnf_arr[i][j][k].toUpperCase())){
+                                        reachableList.push(cnf_arr[i][j][k])
+                                        reachableListNext.push(cnf_arr[i][j][k])
+                                        console.log("Reachable List: ",JSON.stringify(reachableList))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // elimiante lines/rules
+                for (var i = 0; i < cnf_arr.length; i++) {
+                    var reachableList_str = reachableList.join("")
+                    if (reachableList_str.includes(cnf_arr[i][0])) {
+                        cnf_arr_res.push(cnf_arr[i])
+                    }
+                }
+                
+
+                return cnf_arr_res
+            }
+
+            function eliminateNullProduction(cnf_arr) {
+                console.log("==== Eliminate Null Production ====")
+
+                // loop trough all lines/rules
+                var cnf_arr_temp = new Array
+                var nullableList = new Array
+                nullableList.push("")
+                
+                while (nullableList.length > 0) {
+                    var cnf_arr_temp = new Array
+                    if (nullableList[0] == "") {
+                        nullableList.pop()
+                    }
+
+                    // eliminate null and store rules/lines
+                    for (var i = 0; i < cnf_arr.length; i++) {
+                        cnf_arr_temp[i] = new Array
+                        cnf_arr_temp[i].push(cnf_arr[i][0])
+                        for (var j = 1; j < cnf_arr[i].length; j++) {
+                            var str = ""
+                            // checking word
+                            if (cnf_arr[i][j] != "@") {
+                                for (var k = 0; k < cnf_arr[i][j].length; k++) {
+                                    // checking letter
+                                    if (cnf_arr[i][j][k] != "@") {
+                                        str += cnf_arr[i][j][k]
+                                    }
+                                }
+                                cnf_arr_temp[i].push(str)
+                            } else {
+                                nullableList.push(cnf_arr[i][0])
+                            }
+                        }
+                    }
+                    cnf_arr = cnf_arr_temp
+                    console.log(nullableList)
+                    console.log(cnf_arr)
+
+                    // pop from nullable list
+                    cnf_arr_temp = new Array
+                    var letter = nullableList.pop()
+                    
+                    for (var i = 0; i < cnf_arr.length; i++) {
+                        cnf_arr_temp[i] = new Array
+                        cnf_arr_temp[i].push(cnf_arr[i][0])
+                        for (var j = 1; j < cnf_arr[i].length; j++) {
+                            var str = ""
+                            var isContainLT = false
+                            cnf_arr_temp[i].push(cnf_arr[i][j])
+                            for (var k = 0; k < cnf_arr[i][j].length; k++) {
+                                if (cnf_arr[i][j][k] == letter) {
+                                    str += "@"
+                                    isContainLT = true
+                                } else {
+                                    str += cnf_arr[i][j][k]
+                                }
+                            }
+                            if (isContainLT) {
+                                cnf_arr_temp[i].push(str)
+                            }
+                        }
+                    }
+                    cnf_arr = cnf_arr_temp
+                    console.log(cnf_arr)
+                }
+
+                return cnf_arr_temp
+            }
+
+            function generateResult(){
+                console.log("==== Generate Result ====")
+                cnf_str = document.getElementById("inputCNF").value
+                cnf_arr = cnfTextToArray(cnf_str)
+
+                // eliminate not generating
+                cnf_arr_res01 = eliminateNotGenerating(cnf_arr)
+                document.getElementById("res01").value = cnfArraytoText(cnf_arr_res01)
+
+                // eliminate not reachable
+                cnf_arr_res02 = eliminateNotReachable(cnf_arr_res01)
+                document.getElementById("res02").value = cnfArraytoText(cnf_arr_res02)
+
+                // eliminate null production
+                cnf_arr_res03 = eliminateNullProduction(cnf_arr_res02)
+                document.getElementById("res03").value = cnfArraytoText(cnf_arr_res03)
+
+                console.log("")
+            }
+        </script>
+    </head>
+    <body onload="onLoadEvent()">
+        <textarea
+          id="inputCNF"
+          rows="20"
+          cols="25"
+          ></textarea>
+        <textarea
+          id="res01"
+          rows="20"
+          cols="25"
+          disabled
+          ></textarea>
+        <textarea
+          id="res02"
+          rows="20"
+          cols="25"
+          disabled
+          ></textarea>
+        <textarea
+          id="res03"
+          rows="20"
+          cols="25"
+          disabled
+          ></textarea><br/>
+
+        <button
+          onclick="generateResult()"
+          >Generate</button>
+    </body>
+</html>
