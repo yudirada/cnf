@@ -141,6 +141,7 @@
                                         reachableListNext.push(cnf_arr[i][j][k])
                                         console.log("Reachable List: ",JSON.stringify(reachableList))
                                     }
+                                    //console.log("+ next",reachableListNext)
                                 }
                             }
                         }
@@ -154,7 +155,6 @@
                         cnf_arr_res.push(cnf_arr[i])
                     }
                 }
-                
 
                 return cnf_arr_res
             }
@@ -204,8 +204,9 @@
                         }
                     }
                     cnf_arr = cnf_arr_temp
-                    console.log(nullableList)
-                    console.log(cnf_arr)
+                    console.log("Nullable List:",JSON.stringify(nullableList))
+                    console.log("+ remove epsilon",cnf_arr)
+                    //console.log(cnfArraytoText(cnf_arr))
 
                     // pop from nullable list
                     cnf_arr_temp = new Array
@@ -232,7 +233,8 @@
                         }
                     }
                     cnf_arr = cnf_arr_temp
-                    console.log(cnf_arr)
+                    console.log("+ generate epsilon",cnf_arr)
+                    //console.log(cnfArraytoText(cnf_arr))
                 }
 
                 return cnf_arr_temp
