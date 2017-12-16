@@ -187,7 +187,17 @@
                                         str += cnf_arr[i][j][k]
                                     }
                                 }
-                                cnf_arr_temp[i].push(str)
+
+                                // this code to check for double word
+                                var isDouble = false
+                                for (var n = 1; n < cnf_arr[i].length; n++) {
+                                    if ((cnf_arr[i][n] == str) && (j != n)) {
+                                        isDouble = true
+                                    }
+                                }
+                                if (!isDouble) {
+                                    cnf_arr_temp[i].push(str)
+                                }
                             } else {
                                 nullableList.push(cnf_arr[i][0])
                             }
